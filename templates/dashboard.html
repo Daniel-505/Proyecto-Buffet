@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard de Productividad del Buffet</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .success { color: green; font-weight: bold; }
+        .danger { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>🚦 Dashboard de Registros de Servicio (S-11)</h1>
+    <p>Visualización de todos los registros históricos enviados por el semáforo al servidor.</p>
+    
+    <button onclick="cargarRegistros()">Actualizar Registros</button>
+    <p id="status"></p>
+
+    <h2>Tabla de Registros de Ciclos de Servicio</h2>
+    <table id="registrosTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha/Hora</th>
+                <th>Ciclo #</th>
+                <th>Servicio (segundos)</th>
+                <th>Espera (segundos)</th>
+                <th>Tipo Finalización</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <script>
+        // ¡IMPORTANTE: Reemplaza con la IP de tu servidor Flask!
+        const API_URL_GET = "http://DIRECCION_IP_DEL_SERVIDOR:5000/api/obtener_registros"; 
+
+        async function cargarRegistros() {
+            const statusElement = document.getElementById('status');
+            const tableBody = document.querySelector('#registrosTable tbody');
+            tableBody.innerHTML = ''; // Limpiar registros anteriores
+            statusElement.textContent = 'Cargando datos...';
+
+            try {
+                const response = await fetch(API_URL_GET);
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusElement.textContent = `Registros cargados exitosamente. Total: ${data.length}`;
+                    
+                    data.forEach(registro => {
+                        const row = tableBody.insertRow();
+                        
+                        // Formato de la fecha
+                        const timestamp = new Date(registro.timestamp);
+                        
+                        // Aplicar clase para tipo de finalización
+                        const finalizacionClass = registro.finalizacion_tipo === 'Forzada' ? 'danger' : 'success';
+
+                        row.insertCell().textContent = registro.id;
+                        row.insertCell().textContent = timestamp.toLocaleString();
+                        row.insertCell().textContent = registro.ciclo_id;
+                        row.insertCell().textContent = registro.duracion_servicio_s;
+                        row.insertCell().textContent = registro.duracion_espera_s;
+                        row.insertCell().innerHTML = `<span class="${finalizacionClass}">${registro.finalizacion_tipo}</span>`;
+                    });
+
+                } else {
+                    statusElement.textContent = `Error del servidor: ${data.error || 'Desconocido'}`;
+                }
+
+            } catch (error) {
+                statusElement.textContent = `Error de conexión: Asegúrate de que el servidor Flask esté corriendo.`;
+                console.error('Error al conectar con la API:', error);
+            }
+        }
+
+        // Cargar los datos automáticamente al cargar la página
+        window.onload = cargarRegistros;
+    </script>
+
+</body>
+</html>
